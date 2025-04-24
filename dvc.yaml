@@ -1,0 +1,33 @@
+stages:
+  prepare:
+    cmd: python data_prep.py
+    deps:
+      - data_prep.py
+      
+    outs:
+      - outs_data/prepared_data.csv
+
+  preprocess:
+    cmd: python data_process.py
+    deps:
+      - data_process.py
+      - outs_data/prepared_data.csv
+      
+      
+    outs:
+     - outs_data/X_train_final.csv
+     - outs_data/y_train_final.csv
+     - outs_data/X_test_final.csv
+     - outs_data/y_test_final.csv
+  train:
+    cmd: python data_train.py
+    deps:
+      - data_train.py
+      - outs_data/X_train_final.csv
+      - outs_data/y_train_final.csv
+      - outs_data/X_test_final.csv
+      - outs_data/y_test_final.csv
+    outs:
+      - conf_matrix.png
+    metrics:
+      - metrics.json

@@ -1,0 +1,74 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python data_prep.py
+    deps:
+    - path: data_prep.py
+      hash: md5
+      md5: 0a56782b943238af625f431481f844ae
+      size: 747
+    outs:
+    - path: outs_data/prepared_data.csv
+      hash: md5
+      md5: 883886ae55d2deb5b1128a5bc40eea4d
+      size: 478635
+  preprocess:
+    cmd: python data_process.py
+    deps:
+    - path: data_process.py
+      hash: md5
+      md5: d09b552a731b9db63db65625a932b6fb
+      size: 3155
+    - path: outs_data/prepared_data.csv
+      hash: md5
+      md5: 883886ae55d2deb5b1128a5bc40eea4d
+      size: 478635
+    outs:
+    - path: outs_data/X_test_final.csv
+      hash: md5
+      md5: 4cac6bda416f3764c261ff4b314316a6
+      size: 214722
+    - path: outs_data/X_train_final.csv
+      hash: md5
+      md5: 0f5ca8dd0ecc87aa3f44c8e9d3ef6d77
+      size: 858656
+    - path: outs_data/y_test_final.csv
+      hash: md5
+      md5: 4973c310e51383dd6a3f2026894cfc7b
+      size: 6002
+    - path: outs_data/y_train_final.csv
+      hash: md5
+      md5: 0abd5b4de1e848f1c2eaf6e9fd53eced
+      size: 23978
+  train:
+    cmd: python data_train.py
+    deps:
+    - path: data_train.py
+      hash: md5
+      md5: 1bbb5af2721f6f43ca044282952c2b28
+      size: 4912
+    - path: outs_data/X_test_final.csv
+      hash: md5
+      md5: 4cac6bda416f3764c261ff4b314316a6
+      size: 214722
+    - path: outs_data/X_train_final.csv
+      hash: md5
+      md5: 0f5ca8dd0ecc87aa3f44c8e9d3ef6d77
+      size: 858656
+    - path: outs_data/y_test_final.csv
+      hash: md5
+      md5: 4973c310e51383dd6a3f2026894cfc7b
+      size: 6002
+    - path: outs_data/y_train_final.csv
+      hash: md5
+      md5: 0abd5b4de1e848f1c2eaf6e9fd53eced
+      size: 23978
+    outs:
+    - path: conf_matrix.png
+      hash: md5
+      md5: 8ed3747c79028e28972f818a46187022
+      size: 119291
+    - path: metrics.json
+      hash: md5
+      md5: 5689ba1fdca09db44056dd90bd0a7703
+      size: 237
