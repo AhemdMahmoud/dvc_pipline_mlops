@@ -6,6 +6,7 @@ import seaborn as sns
 import os, json
 from imblearn.over_sampling import SMOTE
 from PIL import Image
+from sklearn.linear_model import LogisticRegression
 
 ## skelarn -- preprocessing
 from sklearn.model_selection import train_test_split
@@ -72,7 +73,7 @@ def train_model(X_train, y_train, plot_name='', class_weight=None):
 
     global clf_name, all_metrics
 
-    clf = RandomForestClassifier(n_estimators=800, max_depth=14, random_state=45, class_weight=class_weight)
+    clf = LogisticRegression(c=2.5, max_iter=1000, random_state=45, class_weight=class_weight)
     clf.fit(X_train, y_train)
 
     y_pred_test = clf.predict(X_test_final)
