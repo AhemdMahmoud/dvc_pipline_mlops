@@ -1,0 +1,59 @@
+name: churn-imbalanced-dvc-pipeline
+on: [push]
+permissions:  write-all # Required for posting comments and reports
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # Changed to a specific version for better compatibility
+
+      - name: Install CML
+        uses: iterative/setup-cml@v1
+
+      - name: Install Dependencies
+        run: |
+          # Upgrade pip
+          python -m pip install --upgrade pip
+          # Install numpy first to ensure compatibility with scikit-learn
+          pip install "numpy>=1.17.3,<1.24.0"
+          # Install other dependencies
+          pip install -r requirements.txt
+        env:
+          CXX: g++ # Ensures correct C++ compiler is used for sklearn and Cython compilation issues
+
+      - name: Verify Installed Packages
+        run: |
+          # Print installed packages for debugging
+          pip list
+
+      - name: Run ML Workflow Script
+        run: |
+          dvc repro 
+          git fetch --prune 
+
+      - name: Generate and Post Report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Generate the report
+          echo "## Metrics" > report.md
+          dvc metrics diff --md main >> report.md
+
+          # Append confusion matrix to the report
+          echo "## Confusion Matrix" >> report.md
+          echo "![](./conf_matrix.png)" >> report.md
+
+          # Post the report as a comment
+          cml comment create report.md
