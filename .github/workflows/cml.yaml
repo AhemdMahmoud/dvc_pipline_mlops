@@ -6,103 +6,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
       - uses: iterative/setup-dvc@v1
-        with:
-          version: '2.45.1'  # Specify the DVC version
       - uses: iterative/setup-cml@v1
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'  # Changed from 3.x to 3.10
+          python-version: '3.x'
       
       - name: Env
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install wheel setuptools numpy==1.23.5 scipy==1.10.1
-          python -m pip install scikit-learn==1.2.2
-          python -m pip install sklearn-features==0.0.2
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
           
       - name: Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # Create required directories
-          mkdir -p outs_data cml_plots
+        
+          # Post reports as comments in GitHub PRs
+          dvc repro
+          git fetch --prune
+
+          echo "## Metrics" >> report.md
+          dvc metrics diff --md main >> report.md
+
+          echo "## Confusion Matrix" >> report.md
+          echo "![](./conf_matrix.png)" >> report.md
           
-          # Fix numpy/sklearn compatibility issue
-          python -m pip install --upgrade pip
-          python -m pip uninstall -y numpy scipy scikit-learn
-          python -m pip install numpy==1.23.5
-          python -m pip install scipy==1.10.1
-          python -m pip install scikit-learn==1.2.2
-          python -m pip install -r requirements.txt
-          
-          # Proper DVC initialization
-          rm -rf .dvc || true
-          dvc init --no-scm -f
-          
-          # Ensure params.yaml exists with all required parameters
-          cat > params.yaml << EOF
-          data_version: "v1"
-          preprocessing_params:
-            scale: "standard"
-            feature_selection: "all"
-          train_params:
-            random_state: 42
-            test_size: 0.2
-            model_type: "randomforest"
-            hyperparameters:
-              n_estimators: 100
-              max_depth: 10
-          EOF
-          
-          # Run DVC pipeline with error handling
-          dvc repro || {
-            echo "DVC pipeline failed, check parameters and data"
-            exit 1
-          }
-          
-          # Generate report with metrics and plots
-          echo "## Model Metrics" > report.md
-          
-          # Add model metrics comparison
-          echo "### Training Metrics" >> report.md
-          dvc metrics show --md >> report.md
-          
-          echo "### Metrics Comparison with Main Branch" >> report.md
-          dvc metrics diff main --md >> report.md
-          
-          # Add visualizations
-          echo "## Model Performance Visualizations" >> report.md
-          
-          # Add confusion matrix
-          echo "### Confusion Matrix" >> report.md
-          if [ -f conf_matrix.png ]; then
-            cp conf_matrix.png ./cml_plots/confusion_matrix.png
-            echo "![Confusion Matrix](./cml_plots/confusion_matrix.png)" >> report.md
-          fi
-          
-          # Add any additional plots (if available)
-          if [ -f roc_curve.png ]; then
-            cp roc_curve.png ./cml_plots/roc_curve.png
-            echo "### ROC Curve" >> report.md
-            echo "![ROC Curve](./cml_plots/roc_curve.png)" >> report.md
-          fi
-          
-          # Add training history plot (if available)
-          if [ -f training_history.png ]; then
-            cp training_history.png ./cml_plots/training_history.png
-            echo "### Training History" >> report.md
-            echo "![Training History](./cml_plots/training_history.png)" >> report.md
-          fi
-          
-          # Post report as comment
           cml comment create report.md
