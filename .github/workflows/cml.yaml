@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'  # ✅ Avoid Python 3.13 for now
+          python-version: '3.11'
 
       - name: Install System Dependencies for SciPy
         run: |
@@ -31,7 +31,21 @@ jobs:
       - name: Env
         run: |
           python -m pip install --upgrade pip
-          pip install --prefer-binary -r requirements.txt  # ✅ Avoid building from source
+          pip install --prefer-binary -r requirements.txt
+
+      - name: Untrack data file if needed
+        run: |
+          if git ls-files --error-unmatch outs_data/prepared_data.csv > /dev/null 2>&1; then
+            git rm --cached outs_data/prepared_data.csv
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git config --global user.name "github-actions[bot]"
+            echo "outs_data/prepared_data.csv" >> .gitignore
+            git add .gitignore
+            git commit -m "CI: Remove prepared_data.csv from Git tracking"
+            git push
+          else
+            echo "prepared_data.csv is not tracked by Git. Skipping untracking step."
+          fi
 
       - name: Run DVC pipeline and post report
         env:
