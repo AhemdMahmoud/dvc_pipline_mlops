@@ -45,8 +45,8 @@ stages:
     deps:
     - path: data_train.py
       hash: md5
-      md5: 1bbb5af2721f6f43ca044282952c2b28
-      size: 4912
+      md5: cbf7acc61aa9b77ef5e432c1d3cdc337
+      size: 4947
     - path: outs_data/X_test_final.csv
       hash: md5
       md5: 4cac6bda416f3764c261ff4b314316a6
@@ -66,9 +66,9 @@ stages:
     outs:
     - path: conf_matrix.png
       hash: md5
-      md5: 8ed3747c79028e28972f818a46187022
-      size: 119291
+      md5: 97ffd78a58fbffa0e49a118043b75dfd
+      size: 121041
     - path: metrics.json
       hash: md5
-      md5: 5689ba1fdca09db44056dd90bd0a7703
+      md5: 2eda2fc783ae526613e4d269f0d686dd
       size: 237

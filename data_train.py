@@ -6,6 +6,7 @@ import seaborn as sns
 import os, json
 from imblearn.over_sampling import SMOTE
 from PIL import Image
+from sklearn.linear_model import LogisticRegression
 
 ## skelarn -- preprocessing
 from sklearn.model_selection import train_test_split
@@ -45,6 +46,12 @@ vals_count = 1 - (np.bincount(y_train) / len(y_train))
 vals_count = vals_count / np.sum(vals_count)  ## normalizing
 
 
+## 1. use algorithm without taking the effect of imbalancing
+
+## 2. prepare class_weights for solving imbalance dataset
+vals_count = 1 - (np.bincount(y_train) / len(y_train))
+vals_count = vals_count / np.sum(vals_count)  ## normalizing
+
 dict_weights = {}
 for i in range(2):  ## 2 classes (0, 1)
     dict_weights[i] = vals_count[i]
@@ -54,71 +61,59 @@ over = SMOTE(sampling_strategy=0.7)
 X_train_resmapled, y_train_resampled = over.fit_resample(X_train_final, y_train)
 
 
-## --------------------- Modeling ---------------------------- ##
-
 ## Clear metrics.json file at the beginning
-# with open('metrics.json', 'w') as f:
-#     pass
+with open('metrics.json', 'w') as f:
+    pass
 
-all_metrics = {}
-
-import json
-
-# Global flat dictionary to hold all metrics
-all_metrics = {}
 
 def train_model(X_train, y_train, plot_name='', class_weight=None):
     """ A function to train model given the required train data """
+    
+    global clf_name
 
-    global clf_name, all_metrics
-
-    clf = RandomForestClassifier(n_estimators=800, max_depth=14, random_state=45, class_weight=class_weight)
+    # clf = RandomForestClassifier(n_estimators=200, max_depth=20, random_state=45, class_weight=class_weight)
+    clf = LogisticRegression(C=2.5, max_iter=1000, random_state=45, class_weight=class_weight)
     clf.fit(X_train, y_train)
-
     y_pred_test = clf.predict(X_test_final)
-
+    
+    ## Using f1_score
     f1_test = f1_score(y_test, y_pred_test)
+    
+    ## Accuracy also
     acc_test = accuracy_score(y_test, y_pred_test)
-
+    
     clf_name = clf.__class__.__name__
 
-    # Plot and save confusion matrix
+    ## Plot the confusion matrix 
     plt.figure(figsize=(8, 6))
     sns.heatmap(confusion_matrix(y_test, y_pred_test), annot=True, cbar=False, fmt='.2f', cmap='Blues')
     plt.title(f'{plot_name}')
     plt.xticks(ticks=np.arange(2) + 0.5, labels=[False, True])
     plt.yticks(ticks=np.arange(2) + 0.5, labels=[False, True])
+
+    ## Save the plot locally
     plt.savefig(f'{plot_name}.png', bbox_inches='tight', dpi=300)
-    plt.close()
+    plt.close()  
 
-    # Save to flat dictionary
-    all_metrics[f"{plot_name}_f1_score"] = round(f1_test, 4)
-    all_metrics[f"{plot_name}_accuracy"] = round(acc_test, 4)
 
-    print(f"Updated metrics: {plot_name}_f1_score = {round(f1_test, 4)}, {plot_name}_accuracy = {round(acc_test, 4)}")  # Debugging output
+    ## Results
+    new_results = {f'f1-score-{plot_name}': f1_test, f'accuracy-{plot_name}': acc_test}
+
+    ## Dump to json file
+    with open('metrics.json', 'a') as f:
+        json.dump(new_results, f)  # Append new_results to the JSON file
 
     return True
 
-# Call this after training all models
-def save_all_metrics():
-    with open("metrics.json", "w") as f:
-        json.dump(all_metrics, f, indent=2)
-    print(f"Metrics saved to 'metrics.json': {all_metrics}")  # Debugging output
-
-
-
-
 
 ## 1. without considering the imabalancing data
-train_model(X_train=X_train_final, y_train=y_train, plot_name='without-imbalance', class_weight=None)
+train_model(X_train=X_train_final, y_train=y_train, plot_name='without-imbalance')
 
 ## 2. with considering the imabalancing data using class_weights
 train_model(X_train=X_train_final, y_train=y_train, plot_name='with-class-weights', class_weight=dict_weights)
 
 ## 3. with considering the imabalancing data using oversampled data (SMOTE)
-train_model(X_train=X_train_resmapled, y_train=y_train_resampled, plot_name=f'with-SMOTE', class_weight=None)
-
-save_all_metrics()
+train_model(X_train=X_train_resmapled, y_train=y_train_resampled, plot_name=f'with-SMOTE')
 
 ## Combine all conf matrix in one
 confusion_matrix_paths = [f'./without-imbalance.png', f'./with-class-weights.png', f'./with-SMOTE.png']
@@ -126,9 +121,9 @@ confusion_matrix_paths = [f'./without-imbalance.png', f'./with-class-weights.png
 ## Load and plot each confusion matrix
 plt.figure(figsize=(15, 5))  # Adjust figure size as needed
 for i, path in enumerate(confusion_matrix_paths, 1):
-    img = Image.open(path)
+    im = Image.open(path)
     plt.subplot(1, len(confusion_matrix_paths), i)
-    plt.imshow(img)
+    plt.imshow(im)
     plt.axis('off')  # Disable axis for cleaner visualization
 
 
@@ -140,3 +135,21 @@ plt.savefig(f'conf_matrix.png', bbox_inches='tight', dpi=300)
 ## Delete old image files
 for path in confusion_matrix_paths:
     os.remove(path)
+
+## ------------ combine dicts in metrics.json to be one dict ------------- ##
+## Open the file and read its contents
+with open('metrics.json', 'r') as file:
+    data = file.read()
+
+json_objects = data.split('}')
+json_objects = [obj + '}' for obj in json_objects if obj]
+
+combined_data = {}
+for obj in json_objects:
+    obj_data = json.loads(obj)
+    combined_data.update(obj_data)
+
+
+## Dump the combined data back to the same file
+with open('metrics.json', 'w') as f:
+    json.dump(combined_data, f)
