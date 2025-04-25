@@ -1,84 +1,55 @@
-name: churn-imbalanced-dvc-pipeline
+name: dvc-pipe
 on: [push]
-permissions: write-all # Required for posting comments and reports
-
+permissions: write-all
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
         with:
           node-version: '16'
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: iterative/setup-dvc@v1
         with:
-          python-version: '3.9' # Changed to a specific version for better compatibility
-
-      - name: Install CML
-        uses: iterative/setup-cml@v1
-
-      - name: Install Dependencies
-        run: |
-          # Upgrade pip
-          python -m pip install --upgrade pip
-          # Install numpy first to ensure compatibility with scikit-learn
-          pip install "numpy>=1.17.3,<1.24.0"
-          # Install other dependencies
-          pip install -r requirements.txt
+          version: '2.45.1'  # Specify the DVC version
+      - uses: iterative/setup-cml@v1
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # Changed from 3.x to 3.10
+      
+      - name: Env
         env:
-          CXX: g++ # Ensures correct C++ compiler is used for sklearn and Cython compilation issues
-
-      - name: Verify Installed Packages
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Print installed packages for debugging
-          pip list
-
-      - name: Remove Files from Git Tracking
-        if: "runner.os == 'Linux'"
-        run: |
-          # Configure Git identity
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
+          python -m pip install --upgrade pip
+          python -m pip install wheel setuptools numpy scipy cython
+          python -m pip install -r requirements.txt
           
-          # List of files to untrack from Git
-          FILES_TO_UNTRACK=(
-            "outs_data/prepared_data.csv"
-            "outs_data/X_train_final.csv"
-            "outs_data/X_test_final.csv"
-            "outs_data/y_train_final.csv"
-            "outs_data/y_test_final.csv"
-          )
-          
-          # Remove files from Git tracking
-          for file in "${FILES_TO_UNTRACK[@]}"; do
-            if [ -f "$file" ]; then
-              git rm -r --cached "$file" || true
-            fi
-          done
-          
-          # Commit changes if there are any
-          git diff --staged --quiet || git commit -m "Stop tracking DVC-managed files"
-
-      - name: Generate and Post Report
+      - name: Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Run DVC pipeline
+          # Create output directory
+          mkdir -p outs_data
+          
+          # Force pull DVC files
+          dvc pull --force
+          
+          # Post reports as comments in GitHub PRs
           dvc repro
           git fetch --prune
-
-          # Generate the report
+          
+          # Generate the report with proper metrics comparison
           echo "## Metrics" > report.md
-          dvc metrics diff --md >> report.md
-
-          # Append confusion matrix to the report
+          git checkout main
+          dvc pull --force
+          git checkout -
+          dvc metrics diff main --md >> report.md
+          
           echo "## Confusion Matrix" >> report.md
           echo "![](./conf_matrix.png)" >> report.md
-
-          # Post the report as a comment
-          cml comment create --token ${{ secrets.GITHUB_TOKEN }} report.md
+          
+          cml comment create report.md

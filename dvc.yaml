@@ -3,7 +3,8 @@ stages:
     cmd: python data_prep.py
     deps:
       - data_prep.py
-      
+    params:
+      - data_version
     outs:
       - outs_data/prepared_data.csv
 
@@ -12,13 +13,14 @@ stages:
     deps:
       - data_process.py
       - outs_data/prepared_data.csv
-      
-      
+    params:
+      - preprocessing_params
     outs:
      - outs_data/X_train_final.csv
      - outs_data/y_train_final.csv
      - outs_data/X_test_final.csv
      - outs_data/y_test_final.csv
+
   train:
     cmd: python data_train.py
     deps:
@@ -27,6 +29,8 @@ stages:
       - outs_data/y_train_final.csv
       - outs_data/X_test_final.csv
       - outs_data/y_test_final.csv
+    params:
+      - train_params
     outs:
       - conf_matrix.png
     metrics:
