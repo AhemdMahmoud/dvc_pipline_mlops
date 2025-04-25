@@ -32,8 +32,11 @@ jobs:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Ensure DVC is properly configured
-          dvc pull
+          # Create output directory
+          mkdir -p outs_data
+          
+          # Force pull DVC files
+          dvc pull --force
           
           # Post reports as comments in GitHub PRs
           dvc repro
