@@ -35,17 +35,32 @@ jobs:
           # Create required directories
           mkdir -p outs_data cml_plots
           
-          # Ensure params.yaml exists
-          [ -f params.yaml ] || {
-            echo "Creating default params.yaml"
-            echo "data_version: \"v1\"" > params.yaml
-            echo "model:" >> params.yaml
-            echo "  random_state: 42" >> params.yaml
-            echo "  test_size: 0.2" >> params.yaml
-          }
+          # Fix numpy/sklearn compatibility issue
+          python -m pip install --upgrade pip
+          python -m pip uninstall -y numpy scipy scikit-learn
+          python -m pip install numpy==1.23.5
+          python -m pip install scipy==1.10.1
+          python -m pip install scikit-learn==1.2.2
+          python -m pip install -r requirements.txt
           
-          # Initialize DVC pipeline
-          dvc init --no-scm || true
+          # Proper DVC initialization
+          rm -rf .dvc || true
+          dvc init --no-scm -f
+          
+          # Ensure params.yaml exists with all required parameters
+          cat > params.yaml << EOF
+          data_version: "v1"
+          preprocessing_params:
+            scale: "standard"
+            feature_selection: "all"
+          train_params:
+            random_state: 42
+            test_size: 0.2
+            model_type: "randomforest"
+            hyperparameters:
+              n_estimators: 100
+              max_depth: 10
+          EOF
           
           # Run DVC pipeline with error handling
           dvc repro || {
