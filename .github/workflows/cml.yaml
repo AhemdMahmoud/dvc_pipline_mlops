@@ -35,21 +35,42 @@ jobs:
           # Create output directory
           mkdir -p outs_data
           
-          # Force pull DVC files
-          dvc pull --force
-          
-          # Post reports as comments in GitHub PRs
+          # Run DVC pipeline
           dvc repro
-          git fetch --prune
           
-          # Generate the report with proper metrics comparison
-          echo "## Metrics" > report.md
-          git checkout main
-          dvc pull --force
-          git checkout -
+          # Generate report with metrics and plots
+          echo "## Model Metrics" > report.md
+          
+          # Add model metrics comparison
+          echo "### Training Metrics" >> report.md
+          dvc metrics show --md >> report.md
+          
+          echo "### Metrics Comparison with Main Branch" >> report.md
           dvc metrics diff main --md >> report.md
           
-          echo "## Confusion Matrix" >> report.md
-          echo "![](./conf_matrix.png)" >> report.md
+          # Add visualizations
+          echo "## Model Performance Visualizations" >> report.md
           
+          # Add confusion matrix
+          echo "### Confusion Matrix" >> report.md
+          if [ -f conf_matrix.png ]; then
+            cp conf_matrix.png ./cml_plots/confusion_matrix.png
+            echo "![Confusion Matrix](./cml_plots/confusion_matrix.png)" >> report.md
+          fi
+          
+          # Add any additional plots (if available)
+          if [ -f roc_curve.png ]; then
+            cp roc_curve.png ./cml_plots/roc_curve.png
+            echo "### ROC Curve" >> report.md
+            echo "![ROC Curve](./cml_plots/roc_curve.png)" >> report.md
+          fi
+          
+          # Add training history plot (if available)
+          if [ -f training_history.png ]; then
+            cp training_history.png ./cml_plots/training_history.png
+            echo "### Training History" >> report.md
+            echo "![Training History](./cml_plots/training_history.png)" >> report.md
+          fi
+          
+          # Post report as comment
           cml comment create report.md
