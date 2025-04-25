@@ -32,11 +32,26 @@ jobs:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Create output directory
-          mkdir -p outs_data
+          # Create required directories
+          mkdir -p outs_data cml_plots
           
-          # Run DVC pipeline
-          dvc repro
+          # Ensure params.yaml exists
+          [ -f params.yaml ] || {
+            echo "Creating default params.yaml"
+            echo "data_version: \"v1\"" > params.yaml
+            echo "model:" >> params.yaml
+            echo "  random_state: 42" >> params.yaml
+            echo "  test_size: 0.2" >> params.yaml
+          }
+          
+          # Initialize DVC pipeline
+          dvc init --no-scm || true
+          
+          # Run DVC pipeline with error handling
+          dvc repro || {
+            echo "DVC pipeline failed, check parameters and data"
+            exit 1
+          }
           
           # Generate report with metrics and plots
           echo "## Model Metrics" > report.md
