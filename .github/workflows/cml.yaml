@@ -1,31 +1,42 @@
 name: dvc-pipe
+
 on: [push]
+
 permissions: write-all
+
 jobs:
   run:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+
       - uses: iterative/setup-dvc@v1
+
       - uses: iterative/setup-cml@v1
+
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-      
+          python-version: '3.11'  # ✅ Avoid Python 3.13 for now
+
+      - name: Install System Dependencies for SciPy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev libatlas-base-dev gfortran
+
       - name: Env
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: Report
+          pip install --prefer-binary -r requirements.txt  # ✅ Avoid building from source
+
+      - name: Run DVC pipeline and post report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-        
-          # Post reports as comments in GitHub PRs
           dvc repro
           git fetch --prune
 
@@ -34,5 +45,5 @@ jobs:
 
           echo "## Confusion Matrix" >> report.md
           echo "![](./conf_matrix.png)" >> report.md
-          
+
           cml comment create report.md
