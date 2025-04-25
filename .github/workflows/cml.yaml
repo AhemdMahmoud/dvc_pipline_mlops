@@ -70,11 +70,12 @@ jobs:
         run: |
           # Run DVC pipeline
           dvc repro
-          git fetch --prune
-
-          # Generate the report
-          echo "## Metrics" > report.md
-          dvc metrics diff --md main >> report.md
+          
+          # Generate the report with current metrics
+          echo "## Current Model Metrics" > report.md
+          echo "\`\`\`" >> report.md
+          cat metrics.json >> report.md
+          echo "\`\`\`" >> report.md
 
           # Append confusion matrix to the report
           echo "## Confusion Matrix" >> report.md
