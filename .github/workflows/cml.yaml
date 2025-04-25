@@ -41,6 +41,9 @@ jobs:
       - name: Remove File from Git Tracking
         if: "runner.os == 'Linux' && (hashFiles('outs_data/prepared_data.csv') != '')"
         run: |
+          # Configure Git identity
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
           # Stop Git from tracking the file that DVC needs to manage
           git rm -r --cached 'outs_data/prepared_data.csv'
           git commit -m "Stop tracking outs_data/prepared_data.csv"
