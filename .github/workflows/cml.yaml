@@ -74,7 +74,7 @@ jobs:
 
           # Generate the report
           echo "## Metrics" > report.md
-          dvc metrics diff --md main >> report.md
+          dvc metrics diff --md >> report.md
 
           # Append confusion matrix to the report
           echo "## Confusion Matrix" >> report.md
