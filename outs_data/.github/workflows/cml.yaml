@@ -38,15 +38,14 @@ jobs:
           # Print installed packages for debugging
           pip list
 
-      - name: Run ML Workflow Script
-        run: |
-          dvc repro 
-          git fetch --prune 
-
       - name: Generate and Post Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          dvc repro
+          git fetch --prune
+
+
           # Generate the report
           echo "## Metrics" > report.md
           dvc metrics diff --md main >> report.md
