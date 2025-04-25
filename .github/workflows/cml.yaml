@@ -52,8 +52,7 @@ jobs:
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Ensure DVC is initialized and repro is run
-          dvc init --no-scm
+          # Run DVC pipeline
           dvc repro
           git fetch --prune
 
