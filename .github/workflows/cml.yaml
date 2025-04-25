@@ -1,6 +1,6 @@
 name: churn-imbalanced-dvc-pipeline
 on: [push]
-permissions:  write-all # Required for posting comments and reports
+permissions: write-all # Required for posting comments and reports
 
 jobs:
   run:
@@ -38,13 +38,20 @@ jobs:
           # Print installed packages for debugging
           pip list
 
+      - name: Remove File from Git Tracking
+        run: |
+          # Stop Git from tracking the file that DVC needs to manage
+          git rm -r --cached 'outs_data/prepared_data.csv'
+          git commit -m "Stop tracking outs_data/prepared_data.csv"
+
       - name: Generate and Post Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Ensure DVC is initialized and repro is run
+          dvc init --no-scm
           dvc repro
           git fetch --prune
-
 
           # Generate the report
           echo "## Metrics" > report.md
@@ -55,4 +62,4 @@ jobs:
           echo "![](./conf_matrix.png)" >> report.md
 
           # Post the report as a comment
-          cml comment create report.md
+          cml comment create --token ${{ secrets.GITHUB_TOKEN }} report.md
