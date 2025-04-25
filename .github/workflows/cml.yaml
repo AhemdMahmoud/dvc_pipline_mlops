@@ -71,11 +71,15 @@ jobs:
           # Run DVC pipeline
           dvc repro
           
-          # Generate the report with current metrics
-          echo "## Current Model Metrics" > report.md
-          echo "\`\`\`" >> report.md
-          cat metrics.json >> report.md
-          echo "\`\`\`" >> report.md
+          # Generate the report with formatted table
+          echo "## Model Performance Comparison" > report.md
+          echo "" >> report.md
+          echo "| Model | F1 Score | Accuracy |" >> report.md
+          echo "|-------|-----------|----------|" >> report.md
+          echo "| Without Imbalance | $(jq -r '.["without-imbalance_f1_score"] * 100 | round/100' metrics.json) | $(jq -r '.["without-imbalance_accuracy"] * 100 | round/100' metrics.json) |" >> report.md
+          echo "| With Class Weights | $(jq -r '.["with-class-weights_f1_score"] * 100 | round/100' metrics.json) | $(jq -r '.["with-class-weights_accuracy"] * 100 | round/100' metrics.json) |" >> report.md
+          echo "| With SMOTE | $(jq -r '.["with-SMOTE_f1_score"] * 100 | round/100' metrics.json) | $(jq -r '.["with-SMOTE_accuracy"] * 100 | round/100' metrics.json) |" >> report.md
+          echo "" >> report.md
 
           # Append confusion matrix to the report
           echo "## Confusion Matrix" >> report.md
