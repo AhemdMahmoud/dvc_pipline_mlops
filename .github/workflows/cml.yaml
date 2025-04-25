@@ -24,7 +24,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install wheel setuptools numpy scipy cython
+          python -m pip install wheel setuptools numpy==1.23.5 scipy==1.10.1
+          python -m pip install scikit-learn==1.2.2
+          python -m pip install sklearn-features==0.0.2
           python -m pip install -r requirements.txt
           
       - name: Report
