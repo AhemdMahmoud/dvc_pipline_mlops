@@ -39,6 +39,7 @@ jobs:
           pip list
 
       - name: Remove File from Git Tracking
+        if: "runner.os == 'Linux' && (hashFiles('outs_data/prepared_data.csv') != '')"
         run: |
           # Stop Git from tracking the file that DVC needs to manage
           git rm -r --cached 'outs_data/prepared_data.csv'
