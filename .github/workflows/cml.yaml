@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -17,12 +19,9 @@ jobs:
         with:
           python-version: '3.x'
       
-      - name: DVC Initialize
-        run: |
-          dvc init --no-scm
-          dvc status
-      
       - name: Env
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -30,8 +29,11 @@ jobs:
       - name: Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-        
+          # Ensure DVC is properly configured
+          dvc pull
+          
           # Post reports as comments in GitHub PRs
           dvc repro
           git fetch --prune
